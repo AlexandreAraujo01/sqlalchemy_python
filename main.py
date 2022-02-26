@@ -4,15 +4,17 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import os
 
+# Setting the Environment Variables!
 os.environ['Server_mssql'] = ''
 os.environ['Database_mssql'] = ''
 os.environ['Driver_mssql'] = ''
 
 # MSSLQ authentification
 # this login is based on Windows Authentification
-SERVER ='DESKTOP-G8L8E1L'
-DATABASE = 'pythonSQL'
-DRIVER = 'ODBC Driver 17 for SQL Server'
+
+SERVER = os.environ.get('Server_mssql')
+DATABASE = os.environ.get('Database_mssql')
+DRIVER = os.environ.get('Driver_mssql')
 
 # to log using login and password follow the documentation bellow.
 # https://docs.sqlalchemy.org/en/14/dialects/mssql.html#module-sqlalchemy.dialects.mssql.pymssql
@@ -51,15 +53,20 @@ class Db_movies(Base):
         formated_date = datetime.strptime(date, '%d/%m/%Y').date()
         session.add(Db_movies(movie_name = name, launch_date = formated_date, movie_gender = gender, movie_description = description))
         session.commit()
-
+    # function that make a query in the database based on the parameter
     def query(movie_name = ''):
+        arr = list()
         if movie_name == '':
             for instance in session.query(Db_movies).all():
-                print(f'Id = {instance.id_movie}, Name = {instance.movie_name}, Launch Date = {instance.launch_date}, Movie Gender = {instance.movie_gender}, Description = {instance.movie_description}')
+                arr.append(instance.__dict__)
+            return arr
+
         elif len(movie_name) >= 1:
-            for instance in session.query(Db_movies).filter(Db_movies.movie_name == movie_name):
-                dic = {'id': instance.id_movie, 'name': instance.movie_name, 'launch_date': instance.launch_date, 'gender': instance.movie_gender, 'description': instance.movie_description}
-                print(dic)
+            arr = list()
+            for instance in session.query(Db_movies).filter(Db_movies.movie_name == movie_name)[:]:
+                arr.append(instance.__dict__)
+            return arr
+
 
 
     
