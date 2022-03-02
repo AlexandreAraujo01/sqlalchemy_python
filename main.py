@@ -36,6 +36,33 @@ Session = sessionmaker()
 # tables on database
 
 
+def abstract_query(db_type:Base, db_column:str, name:str = '', delete:bool = False): 
+    global session
+    attr = getattr(db_type, db_column)
+    arr = []
+
+    # EXAMPLE: x = db_type.query()
+    if name == '' and delete == False:
+        for instance in session.query(db_type).all():
+            arr.append(instance.__dict__)
+            return arr
+        return None
+    # EXAMPLE: x = db_type.query('Fight Club')
+    elif len(name) >= 1 and delete == False:
+        arr = []
+        for instance in session.query(db_type).filter(attr == name):
+            arr.append(instance.__dict__)
+        return arr
+
+    elif delete == True and name != '':
+        for instance in session.query(db_type).filter(attr == name):
+            x= session.query(db_type).filter_by(**{db_column: name}).count()
+            session.delete(instance)
+            session.commit()
+            return x 
+        return None
+    assert False,f"inacessivel"
+
 class Db_movies(Base):
     __tablename__ = 'Db_movies'
     id_movie = Column(Integer, primary_key=True)
@@ -51,44 +78,32 @@ class Db_movies(Base):
 
     # function that append a movie in the database.
     # EXAMPLE: Db_movies.append_movies('Fight Club', '01/10/1990','action','test')
-    def append_movies(name,date,gender,author_id,description=''):
+    def append_movies(name,date,gender,author,description=''):
         formated_date = datetime.strptime(date,'%d/%m/%Y').date()
-        session.add(Db_movies(movie_name = name, launch_date = formated_date, movie_gender = gender, movie_description = description, author = author_id))
+        a = Db_movies(movie_name = name, launch_date = formated_date, movie_gender = gender, movie_description = description, Author_id = author)
+        session.add(a)
         session.commit()
 
     # function that make a query in the database based on the parameter
     def query(name = '',delete = False):
-        arr = list()
-        # EXAMPLE: x = Db_movies.query()
-        if name == '' and delete == False:
-            for instance in session.query(Db_movies).all():
-                arr.append(instance.__dict__)
-            return arr
-
-        # EXAMPLE: x = Db_movies.query('Fight Club')
-        elif len(name) >= 1 and delete == False:
-            arr = list()
-            for instance in session.query(Db_movies).filter(Db_movies.movie_name == name):
-                arr.append(instance.__dict__)
-            return arr
-
-        elif delete == True and name != '':
-            for instance in session.query(Db_movies).filter(Db_movies.movie_name == name):
-                x= session.query(Db_movies).filter_by(movie_name=name).count()
-                session.delete(instance)
-                session.commit()
-                return x
-                
+       return abstract_query(Db_movies,'movie_name',name,delete)
+        
 
 class Author(Base):
     __tablename__ = 'Author'
     id = Column(Integer, primary_key=True)
     first_name = Column(VARCHAR(50), nullable=False)
-    last_name = Column(VARCHAR(50), nullable=False)
+    last_name = Column(VARCHAR(150), nullable=False)
+    
+    
 
     def append_author(name,last_name):
+        print(Author.__tablename__)
         session.add(Author(first_name = name, last_name = last_name))
         session.commit()
+    
+    def query(name = '',delete = False):
+        return abstract_query(Author, 'first_name', name, delete)
     
 
 
@@ -111,15 +126,16 @@ session = Session()
 # ---------------------------** -------------------------------** --------------------------------------**-------------
 
 
-Author.append_author('Chuck','Palahniuk')
 
-# Db_movies.append_movies('forrest gump','30/05/2014','Drama/Romance','''Slow-witted Forrest Gump (Tom Hanks) has never thought of himself as disadvantaged, and thanks to his supportive mother (Sally Field), he leads anything but a restricted life. Whether dominating on the gridiron as a college football star, fighting in Vietnam or captaining a shrimp boat, Forrest inspires people with his childlike optimism. But one person Forrest cares about most may be the most difficult to save -- his childhood love, the sweet but troubled Jenny (Robin Wright).
-# ''')
+
 
 
 # x = Db_movies.query('Fight Club')
 # print(x)
 
+
+y = Author.query('Douglas')
+print(y)
 
 
 # Db_movies.append_movies('Fight Club', '01/10/1990','action','test')
