@@ -1,5 +1,7 @@
 from datetime import datetime
-from sqlalchemy import Column, Date, Integer, Text, UniqueConstraint, create_engine, inspect, String, VARCHAR,ForeignKey
+from re import S
+from numpy import where
+from sqlalchemy import Column, Date, Integer, Text, UniqueConstraint, create_engine, inspect, String, VARCHAR,ForeignKey, update
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 import os
@@ -36,32 +38,41 @@ Session = sessionmaker()
 # tables on database
 
 
-def abstract_query(db_type:Base, db_column:str, name:str = '', delete:bool = False): 
+def abstract_query(db_name:Base, db_column:str, name:str = '', delete:bool = False): 
+    print(db_name)
     global session
-    attr = getattr(db_type, db_column)
+    attr = getattr(db_name, db_column)
     arr = []
 
-    # EXAMPLE: x = db_type.query()
     if name == '' and delete == False:
-        for instance in session.query(db_type).all():
+        for instance in session.query(db_name).all():
             arr.append(instance.__dict__)
             return arr
         return None
     # EXAMPLE: x = db_type.query('Fight Club')
     elif len(name) >= 1 and delete == False:
         arr = []
-        for instance in session.query(db_type).filter(attr == name):
+        for instance in session.query(db_name).filter(attr == name):
             arr.append(instance.__dict__)
         return arr
 
     elif delete == True and name != '':
-        for instance in session.query(db_type).filter(attr == name):
-            x= session.query(db_type).filter_by(**{db_column: name}).count()
+        for instance in session.query(db_name).filter(attr == name):
+            x= session.query(db_name).filter_by(**{db_column: name}).count()
             session.delete(instance)
             session.commit()
             return x 
         return None
     assert False,f"inacessivel"
+
+
+def update_user_abstract(db_name,old:str,new:str):
+    session.execute(
+    update(db_name).
+    where(db_name.first_name == old).
+    values(first_name = new) 
+    )
+    session.commit()
 
 class Db_movies(Base):
     __tablename__ = 'Db_movies'
@@ -85,8 +96,8 @@ class Db_movies(Base):
         session.commit()
 
     # function that make a query in the database based on the parameter
-    def query(name = '',delete = False):
-       return abstract_query(Db_movies,'movie_name',name,delete)
+    def query(name = '',x = 'movie_name',delete = False):
+       return abstract_query(Db_movies,x,name,delete)
         
 
 class Author(Base):
@@ -104,6 +115,11 @@ class Author(Base):
     
     def query(name = '',delete = False):
         return abstract_query(Author, 'first_name', name, delete)
+
+    def update_user(db_name,old,new):
+        return update_user_abstract(db_name,old,new)
+        
+
     
 
 
@@ -134,9 +150,12 @@ session = Session()
 # print(x)
 
 
-y = Author.query('Douglas')
+y = Author.query('xaropinho')
 print(y)
 
+
+# Author.append_author('test','test')
+# Author.update_user('test','xaropinho')
 
 # Db_movies.append_movies('Fight Club', '01/10/1990','action','test')
 
